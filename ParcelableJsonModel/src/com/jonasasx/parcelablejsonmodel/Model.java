@@ -318,15 +318,18 @@ public abstract class Model implements Parcelable {
 			} else if ((List.class.isAssignableFrom(tClass) || Set.class.isAssignableFrom(tClass)) && value instanceof JSONArray && paramType instanceof ParameterizedType) {
 				Type listType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
 				JSONArray jsonArray = (JSONArray) value;
-				Collection<Object> collection;
-				try {
-					collection = (Collection<Object>) tClass.newInstance();
-				} catch (InstantiationException e) {
+				Collection<Object> collection = null;
+				if (!tClass.isInterface() && tClass.getDeclaredConstructor() != null) {
+					try {
+						collection = (Collection<Object>) tClass.newInstance();
+					} catch (InstantiationException e) {
+					}
+				}
+				if (collection == null)
 					if (List.class.isAssignableFrom(tClass))
 						collection = new ArrayList<Object>();
 					else
 						collection = new LinkedHashSet<Object>();
-				}
 				for (int i = 0, m = jsonArray.length(); i < m; i++) {
 					if (!jsonArray.isNull(i))
 						collection.add(castValue((Class<?>) listType, listType, jsonArray.get(i)));
