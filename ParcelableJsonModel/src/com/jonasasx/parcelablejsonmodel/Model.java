@@ -253,6 +253,21 @@ public abstract class Model implements Parcelable {
 		return this;
 	}
 
+	public Model mergeAttributesFrom(Model model) {
+		ArrayList<Field> fields = getDeclaredFields(getClass());
+		for (Field field : fields) {
+			field.setAccessible(true);
+			try {
+				field.set(this, field.get(model));
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			}
+		}
+		return this;
+	}
+
 	/**
 	 * Cast value.
 	 *
@@ -268,98 +283,97 @@ public abstract class Model implements Parcelable {
 	 */
 	@SuppressWarnings("unchecked")
 	private Object castValue(Class<?> tClass, Type paramType, Object value) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, JSONException {
-		try {
-			if (Model.class.isAssignableFrom(tClass) && value instanceof JSONObject) {
-				Class<? extends Model> c = (Class<? extends Model>) tClass;
-				Model model = (Model) c.getMethod("newInstance", Class.class, JSONObject.class).invoke(null, c, (JSONObject) value);
-				return model;
-			} else if (Byte.class.isAssignableFrom(tClass) || byte.class.isAssignableFrom(tClass)) {
-				if (value instanceof Number)
-					return ((Number) value).byteValue();
-				else if (value instanceof String)
-					return Byte.valueOf((String) value);
-			} else if (Short.class.isAssignableFrom(tClass) || short.class.isAssignableFrom(tClass)) {
-				if (value instanceof Number)
-					return ((Number) value).shortValue();
-				else if (value instanceof String)
-					return Short.valueOf((String) value);
-			} else if (Integer.class.isAssignableFrom(tClass) || int.class.isAssignableFrom(tClass)) {
-				if (value instanceof Number)
-					return ((Number) value).intValue();
-				else if (value instanceof String)
 
-					return Integer.valueOf((String) value);
-
-			} else if (Long.class.isAssignableFrom(tClass) || long.class.isAssignableFrom(tClass)) {
-				if (value instanceof Number)
-					return ((Number) value).longValue();
-				else if (value instanceof String)
-					return Long.valueOf((String) value);
-			} else if (Float.class.isAssignableFrom(tClass) || float.class.isAssignableFrom(tClass)) {
-				if (value instanceof Number)
-					return ((Number) value).floatValue();
-				else if (value instanceof String)
-					return Float.valueOf((String) value);
-			} else if (Double.class.isAssignableFrom(tClass) || double.class.isAssignableFrom(tClass)) {
-				if (value instanceof Number)
-					return ((Number) value).doubleValue();
-				else if (value instanceof String)
-					return Double.valueOf((String) value);
-			} else if (Boolean.class.isAssignableFrom(tClass) || boolean.class.isAssignableFrom(tClass)) {
-				if (value instanceof Number)
-					return ((Number) value).byteValue() == 1;
-				else if (value instanceof String)
-					if (value.equals("true") || value.equals("false"))
-						return Boolean.parseBoolean((String) value);
-					else
-						return Byte.valueOf((String) value) == 1;
-				else if (value instanceof Boolean)
-					return Boolean.valueOf((Boolean) value);
-			} else if ((List.class.isAssignableFrom(tClass) || Set.class.isAssignableFrom(tClass)) && value instanceof JSONArray && paramType instanceof ParameterizedType) {
-				Type listType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
-				JSONArray jsonArray = (JSONArray) value;
-				Collection<Object> collection = null;
-				if (!tClass.isInterface() && tClass.getDeclaredConstructor() != null) {
-					try {
-						collection = (Collection<Object>) tClass.newInstance();
-					} catch (InstantiationException e) {
-					}
-				}
-				if (collection == null)
-					if (List.class.isAssignableFrom(tClass))
-						collection = new ArrayList<Object>();
-					else
-						collection = new LinkedHashSet<Object>();
-				for (int i = 0, m = jsonArray.length(); i < m; i++) {
-					if (!jsonArray.isNull(i))
-						collection.add(castValue((Class<?>) listType, listType, jsonArray.get(i)));
-					else
-						collection.add(null);
-				}
-				return collection;
-			} else if (Map.class.isAssignableFrom(tClass) && value instanceof JSONObject && paramType instanceof ParameterizedType) {
-				Type keyType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
-				Type mapType = ((ParameterizedType) paramType).getActualTypeArguments()[1];
-				JSONObject jsonObject = (JSONObject) value;
-				Map<Object, Object> map;
+		if (Model.class.isAssignableFrom(tClass) && value instanceof JSONObject) {
+			Class<? extends Model> c = (Class<? extends Model>) tClass;
+			Model model = (Model) c.getMethod("newInstance", Class.class, JSONObject.class).invoke(null, c, (JSONObject) value);
+			return model;
+		} else if (Byte.class.isAssignableFrom(tClass) || byte.class.isAssignableFrom(tClass)) {
+			if (value instanceof Number)
+				return ((Number) value).byteValue();
+			else if (value instanceof String)
+				return Byte.valueOf((String) value);
+		} else if (Short.class.isAssignableFrom(tClass) || short.class.isAssignableFrom(tClass)) {
+			if (value instanceof Number)
+				return ((Number) value).shortValue();
+			else if (value instanceof String)
+				return Short.valueOf((String) value);
+		} else if (Integer.class.isAssignableFrom(tClass) || int.class.isAssignableFrom(tClass)) {
+			if (value instanceof Number)
+				return ((Number) value).intValue();
+			else if (value instanceof String)
 				try {
-					map = (Map<Object, Object>) tClass.newInstance();
+					return Integer.valueOf((String) value);
+				} catch (NumberFormatException e) {
+					return 0;
+				}
+		} else if (Long.class.isAssignableFrom(tClass) || long.class.isAssignableFrom(tClass)) {
+			if (value instanceof Number)
+				return ((Number) value).longValue();
+			else if (value instanceof String)
+				return Long.valueOf((String) value);
+		} else if (Float.class.isAssignableFrom(tClass) || float.class.isAssignableFrom(tClass)) {
+			if (value instanceof Number)
+				return ((Number) value).floatValue();
+			else if (value instanceof String)
+				return Float.valueOf((String) value);
+		} else if (Double.class.isAssignableFrom(tClass) || double.class.isAssignableFrom(tClass)) {
+			if (value instanceof Number)
+				return ((Number) value).doubleValue();
+			else if (value instanceof String)
+				return Double.valueOf((String) value);
+		} else if (Boolean.class.isAssignableFrom(tClass) || boolean.class.isAssignableFrom(tClass)) {
+			if (value instanceof Number)
+				return ((Number) value).byteValue() == 1;
+			else if (value instanceof String)
+				if (value.equals("true") || value.equals("false"))
+					return Boolean.parseBoolean((String) value);
+				else
+					return Byte.valueOf((String) value) == 1;
+			else if (value instanceof Boolean)
+				return Boolean.valueOf((Boolean) value);
+		} else if ((List.class.isAssignableFrom(tClass) || Set.class.isAssignableFrom(tClass)) && value instanceof JSONArray && paramType instanceof ParameterizedType) {
+			Type listType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
+			JSONArray jsonArray = (JSONArray) value;
+			Collection<Object> collection = null;
+			if (!tClass.isInterface() && tClass.getDeclaredConstructor() != null) {
+				try {
+					collection = (Collection<Object>) tClass.newInstance();
 				} catch (InstantiationException e) {
-					map = new HashMap<Object, Object>();
 				}
-				Iterator<String> iterator = jsonObject.keys();
-				while (iterator.hasNext()) {
-					String key = iterator.next();
-					if (!jsonObject.isNull(key))
-						map.put(castValue((Class<?>) keyType, keyType, key), castValue((Class<?>) mapType, mapType, jsonObject.get(key)));
-					else {
-						map.put(key, null);
-					}
-				}
-				return map;
 			}
-		} catch (NumberFormatException e) {
-			return 0;
+			if (collection == null)
+				if (List.class.isAssignableFrom(tClass))
+					collection = new ArrayList<Object>();
+				else
+					collection = new LinkedHashSet<Object>();
+			for (int i = 0, m = jsonArray.length(); i < m; i++) {
+				if (!jsonArray.isNull(i))
+					collection.add(castValue((Class<?>) listType, listType, jsonArray.get(i)));
+				else
+					collection.add(null);
+			}
+			return collection;
+		} else if (Map.class.isAssignableFrom(tClass) && value instanceof JSONObject && paramType instanceof ParameterizedType) {
+			Type keyType = ((ParameterizedType) paramType).getActualTypeArguments()[0];
+			Type mapType = ((ParameterizedType) paramType).getActualTypeArguments()[1];
+			JSONObject jsonObject = (JSONObject) value;
+			Map<Object, Object> map;
+			try {
+				map = (Map<Object, Object>) tClass.newInstance();
+			} catch (InstantiationException e) {
+				map = new HashMap<Object, Object>();
+			}
+			Iterator<String> iterator = jsonObject.keys();
+			while (iterator.hasNext()) {
+				String key = iterator.next();
+				if (!jsonObject.isNull(key))
+					map.put(castValue((Class<?>) keyType, keyType, key), castValue((Class<?>) mapType, mapType, jsonObject.get(key)));
+				else {
+					map.put(key, null);
+				}
+			}
+			return map;
 		}
 		return value;
 	}
